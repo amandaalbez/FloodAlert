@@ -1,0 +1,180 @@
+# =========================================================
+
+# FloodAlert - Git Ignore
+
+# Flutter + Python/Flask
+
+# =========================================================
+
+# -------------------------
+
+# Flutter / Dart
+
+# -------------------------
+
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+
+# Arquivos gerados pelo Flutter
+
+**/generated_plugin_registrant.dart
+
+# Android - arquivos locais/gerados
+
+**/android/.gradle/
+**/android/local.properties
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+
+# iOS - arquivos gerados
+
+**/ios/Flutter/ephemeral/
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# macOS
+
+**/macos/Flutter/ephemeral/
+
+# Windows
+
+**/windows/flutter/ephemeral/
+
+# Linux
+
+**/linux/flutter/ephemeral/
+
+# -------------------------
+
+# VS Code
+
+# -------------------------
+
+.vscode/
+*.code-workspace
+
+# -------------------------
+
+# Python
+
+# -------------------------
+
+**pycache**/
+*.py[cod]
+*$py.class
+
+# Ambientes virtuais
+
+.venv/
+venv/
+env/
+ENV/
+
+# Arquivos de configuração local
+
+.env
+.env.*
+
+# Exceção: manter exemplo de configuração
+
+!.env.example
+
+# -------------------------
+
+# Flask
+
+# -------------------------
+
+instance/
+.webassets-cache/
+
+# -------------------------
+
+# Banco de dados / arquivos locais
+
+# -------------------------
+
+*.sqlite
+*.sqlite3
+*.db
+
+# -------------------------
+
+# Uploads e arquivos temporários
+
+# -------------------------
+
+uploads/*
+!uploads/.gitkeep
+
+tmp/
+temp/
+
+# -------------------------
+
+# Logs
+
+# -------------------------
+
+*.log
+
+# -------------------------
+
+# Sistema operacional
+
+# -------------------------
+
+# Windows
+
+Thumbs.db
+Desktop.ini
+
+# macOS
+
+.DS_Store
+
+# -------------------------
+
+# Arquivos de configuração
+
+# -------------------------
+
+*.local
+*.secret
+
+# -------------------------
+
+# Chaves e certificados
+
+# -------------------------
+
+*.pem
+*.key
+*.crt
+
+# -------------------------
+
+# Testes / cobertura
+
+# -------------------------
+
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# -------------------------
+
+# Arquivos de IDE
+
+# -------------------------
+
+.idea/
+*.iml
