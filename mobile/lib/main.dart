@@ -1,6 +1,6 @@
-
 import 'package:flutter/material.dart';
 
+import 'screens/alerts_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/map_screen.dart';
 
@@ -151,7 +151,7 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _telas = const [
     HomeScreen(),
     MapScreen(),
-    _AlertasScreen(),
+    AlertsScreen(),
   ];
 
   @override
@@ -202,41 +202,6 @@ class _MainNavigationState extends State<MainNavigation> {
             label: 'Alertas',
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Tela provisória de alertas.
-/// Depois podemos substituir pela tela completa de alertas.
-class _AlertasScreen extends StatelessWidget {
-  const _AlertasScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        title: const Text(
-          'Alertas',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
-          ),
-        ),
-      ),
-
-      body: const Center(
-        child: Text(
-          'Tela de alertas em desenvolvimento',
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 15,
-          ),
-        ),
       ),
     );
   }
