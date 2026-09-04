@@ -1,5 +1,8 @@
+
 import 'package:flutter/material.dart';
+
 import 'screens/home_screen.dart';
+import 'screens/map_screen.dart';
 
 void main() {
   runApp(const FloodAlertApp());
@@ -7,9 +10,9 @@ void main() {
 
 /// Paleta base do app. Trocar aqui muda o tom de cor em todo o app.
 class AppColors {
-  static const primary = Color(0xFF1D5FA8); // azul profundo
+  static const primary = Color(0xFF1D5FA8);
   static const primaryDark = Color(0xFF123E70);
-  static const secondary = Color(0xFFE8A24C); // âmbar de alerta
+  static const secondary = Color(0xFFE8A24C);
   static const background = Color(0xFFF2F6FB);
   static const surface = Colors.white;
   static const textPrimary = Color(0xFF122338);
@@ -70,8 +73,10 @@ class FloodAlertApp extends StatelessWidget {
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: const Color(0xFFF5F9FD),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: const BorderSide(color: AppColors.border),
@@ -82,7 +87,10 @@ class FloodAlertApp extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
+            borderSide: const BorderSide(
+              color: AppColors.primary,
+              width: 1.6,
+            ),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
@@ -90,15 +98,21 @@ class FloodAlertApp extends StatelessWidget {
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: AppColors.error, width: 1.6),
+            borderSide: const BorderSide(
+              color: AppColors.error,
+              width: 1.6,
+            ),
           ),
-          hintStyle: const TextStyle(color: Color(0xFF93A6AD)),
+          hintStyle: const TextStyle(
+            color: Color(0xFF93A6AD),
+          ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
-            disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.55),
+            disabledBackgroundColor:
+                AppColors.primary.withValues(alpha: 0.55),
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
@@ -116,7 +130,114 @@ class FloodAlertApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const HomeScreen(),
+
+      // A tela inicial continua sendo a HomeScreen.
+      home: const MainNavigation(),
+    );
+  }
+}
+
+/// Controla a navegação principal entre as telas do aplicativo.
+class MainNavigation extends StatefulWidget {
+  const MainNavigation({super.key});
+
+  @override
+  State<MainNavigation> createState() => _MainNavigationState();
+}
+
+class _MainNavigationState extends State<MainNavigation> {
+  int _abaAtual = 0;
+
+  final List<Widget> _telas = const [
+    HomeScreen(),
+    MapScreen(),
+    _AlertasScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _abaAtual,
+        children: _telas,
+      ),
+
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _abaAtual,
+
+        onDestinationSelected: (index) {
+          setState(() {
+            _abaAtual = index;
+          });
+        },
+
+        backgroundColor: AppColors.surface,
+        indicatorColor: AppColors.primary.withValues(alpha: 0.12),
+
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(
+              Icons.home_rounded,
+              color: AppColors.primary,
+            ),
+            label: 'Início',
+          ),
+
+          NavigationDestination(
+            icon: Icon(Icons.map_outlined),
+            selectedIcon: Icon(
+              Icons.map_rounded,
+              color: AppColors.primary,
+            ),
+            label: 'Mapa',
+          ),
+
+          NavigationDestination(
+            icon: Icon(Icons.notifications_outlined),
+            selectedIcon: Icon(
+              Icons.notifications_rounded,
+              color: AppColors.primary,
+            ),
+            label: 'Alertas',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tela provisória de alertas.
+/// Depois podemos substituir pela tela completa de alertas.
+class _AlertasScreen extends StatelessWidget {
+  const _AlertasScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        title: const Text(
+          'Alertas',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ),
+
+      body: const Center(
+        child: Text(
+          'Tela de alertas em desenvolvimento',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 15,
+          ),
+        ),
+      ),
     );
   }
 }

@@ -26,8 +26,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _abaAtual = 0;
-
   // TODO: substituir por dados reais vindos da API / sensores
   final NivelRisco _riscoAtual = NivelRisco.moderado;
   final String _bairroAtual = 'Tijuca, Rio de Janeiro';
@@ -156,35 +154,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 26),
 
-              // ---------- Ações rápidas ----------
-              Text('Ações rápidas', style: textTheme.titleLarge),
-              const SizedBox(height: 12),
+              // ---------- Ação rápida ----------
               SizedBox(
-                height: 92,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    _AcaoRapida(
-                      icone: Icons.campaign_rounded,
-                      label: 'Reportar\nalagamento',
-                      onTap: () {},
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    // TODO: abrir fluxo de reportar alagamento
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.border),
+                    backgroundColor: AppColors.surface,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    _AcaoRapida(
-                      icone: Icons.alt_route_rounded,
-                      label: 'Rotas\nseguras',
-                      onTap: () {},
-                    ),
-                    _AcaoRapida(
-                      icone: Icons.phone_in_talk_rounded,
-                      label: 'Contatos de\nemergência',
-                      onTap: () {},
-                    ),
-                    _AcaoRapida(
-                      icone: Icons.history_rounded,
-                      label: 'Histórico\nda região',
-                      onTap: () {},
-                    ),
-                  ],
+                  ),
+                  icon: const Icon(Icons.campaign_rounded, size: 19),
+                  label: const Text(
+                    'Reportar alagamento',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
 
@@ -213,30 +203,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _abaAtual,
-        onDestinationSelected: (index) => setState(() => _abaAtual = index),
-        backgroundColor: AppColors.surface,
-        indicatorColor: AppColors.primary.withValues(alpha: 0.12),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded, color: AppColors.primary),
-            label: 'Início',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map_rounded, color: AppColors.primary),
-            label: 'Mapa',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.notifications_outlined),
-            selectedIcon:
-                Icon(Icons.notifications_rounded, color: AppColors.primary),
-            label: 'Alertas',
-          ),
-        ],
       ),
     );
   }
@@ -282,119 +248,91 @@ class _RiscoCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Ícone decorativo gigante e sutil ao fundo
-          Positioned(
-            right: -18,
-            top: -18,
-            child: Icon(
-              Icons.water_drop_rounded,
-              size: 130,
-              color: Colors.white.withValues(alpha: 0.06),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // Linha superior: status "ao vivo" + localização monitorada
+          Row(
             children: [
-              // Linha superior: status "ao vivo" + localização monitorada
-              Row(
-                children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    margin: const EdgeInsets.only(right: 6),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  Text(
-                    'MONITORAMENTO ATIVO',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 11,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.location_on_rounded,
-                    size: 16,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      local,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              Text(
-                'Risco de alagamento na sua área',
-                style: textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.8),
+              Container(
+                width: 7,
+                height: 7,
+                margin: const EdgeInsets.only(right: 7),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(height: 10),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: cor.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(icone, color: cor, size: 24),
-                  ),
-                  const SizedBox(width: 14),
-                  Text(
-                    texto,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ],
+              const Icon(
+                Icons.location_on_rounded,
+                size: 15,
+                color: Colors.white,
               ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: onVerMapa,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primaryDark,
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+              const SizedBox(width: 3),
+              Expanded(
+                child: Text(
+                  local,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13.5,
                   ),
-                  icon: const Icon(Icons.map_rounded, size: 18),
-                  label: const Text(
-                    'Ver mapa de risco',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Risco de alagamento na sua área',
+            style: textTheme.bodyMedium?.copyWith(
+              color: Colors.white.withValues(alpha: 0.8),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: cor.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icone, color: cor, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Text(
+                texto,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: onVerMapa,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppColors.primaryDark,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.map_rounded, size: 18),
+              label: const Text(
+                'Ver mapa de risco',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
           ),
         ],
       ),
