@@ -1,7 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../main.dart';
+import '../services/api_exception.dart';
+import '../services/api_service.dart';
+import 'home_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -59,20 +63,30 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _carregando = true);
 
     try {
-      // TODO: substituir pela chamada real à API de autenticação
-      await Future.delayed(const Duration(seconds: 1));
+      await ApiService.login(
+        email: _emailController.text.trim(),
+        senha: _senhaController.text,
+      );
 
       if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login será conectado à API posteriormente.'),
+        SnackBar(
+          content: Text(e.mensagem),
+          backgroundColor: AppColors.error,
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Não foi possível entrar. Tente novamente.'),
+          content: Text(
+            'Não foi possível conectar ao servidor. Verifique sua conexão.',
+          ),
           backgroundColor: AppColors.error,
         ),
       );
@@ -339,6 +353,19 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             const SizedBox(height: 8),
+            if (kDebugMode)
+              Center(
+                child: TextButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const HomeScreen()),
+                  ),
+                  icon: const Icon(Icons.bug_report_outlined, size: 16),
+                  label: const Text('[debug] pular para a Home'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.textSecondary,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
