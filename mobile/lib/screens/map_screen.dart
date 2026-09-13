@@ -3,6 +3,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../main.dart';
+import '../services/api_exception.dart';
+import '../services/api_service.dart';
 
 enum NivelMapa { baixo, moderado, alto }
 
@@ -28,27 +30,61 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   final MapController _controller = MapController();
 
-  // Centro inicial do mapa (Tijuca, Rio de Janeiro).
+  // Centro inicial do mapa (Tijuca, Rio de Janeiro) — usado até os
+  // pontos reais chegarem da API.
   static const _posicaoInicial = LatLng(-22.9249, -43.2277);
 
-  // TODO: substituir pelos pontos reais vindos da API / sensores
-  final List<RiscoPonto> _pontos = const [
-    RiscoPonto(
-      nome: 'Rio Joana',
-      posicao: LatLng(-22.9235, -43.2310),
-      nivel: NivelMapa.alto,
-    ),
-    RiscoPonto(
-      nome: 'Praça Saens Peña',
-      posicao: LatLng(-22.9257, -43.2298),
-      nivel: NivelMapa.moderado,
-    ),
-    RiscoPonto(
-      nome: 'Grande Tijuca',
-      posicao: LatLng(-22.9270, -43.2250),
-      nivel: NivelMapa.baixo,
-    ),
-  ];
+  bool _carregando = true;
+  String? _erro;
+  List<RiscoPonto> _pontos = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarPontos();
+  }
+
+  NivelMapa _parseNivel(String texto) {
+    switch (texto) {
+      case 'baixo':
+        return NivelMapa.baixo;
+      case 'alto':
+        return NivelMapa.alto;
+      case 'moderado':
+      default:
+        return NivelMapa.moderado;
+    }
+  }
+
+  Future<void> _carregarPontos() async {
+    setState(() {
+      _carregando = true;
+      _erro = null;
+    });
+
+    try {
+      final dados = await ApiService.pontosDoMapa();
+      setState(() {
+        _pontos = dados.map((item) {
+          final mapa = item as Map<String, dynamic>;
+          return RiscoPonto(
+            nome: mapa['nome'] as String,
+            posicao: LatLng(
+              (mapa['latitude'] as num).toDouble(),
+              (mapa['longitude'] as num).toDouble(),
+            ),
+            nivel: _parseNivel(mapa['nivel_risco'] as String),
+          );
+        }).toList();
+      });
+    } on ApiException catch (e) {
+      setState(() => _erro = e.mensagem);
+    } catch (e) {
+      setState(() => _erro = 'Não foi possível carregar o mapa.');
+    } finally {
+      if (mounted) setState(() => _carregando = false);
+    }
+  }
 
   Color _corDoNivel(NivelMapa nivel) {
     switch (nivel) {
@@ -130,6 +166,41 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_carregando) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      );
+    }
+
+    if (_erro != null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.textSecondary),
+                const SizedBox(height: 16),
+                Text(
+                  _erro!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
+                ),
+                const SizedBox(height: 20),
+                OutlinedButton(
+                  onPressed: _carregarPontos,
+                  child: const Text('Tentar novamente'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final marcadores = _pontos.map((ponto) {
       final cor = _corDoNivel(ponto.nivel);
       return Marker(

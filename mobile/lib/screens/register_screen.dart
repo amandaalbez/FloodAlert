@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import '../main.dart';
 import '../services/api_exception.dart';
 import '../services/api_service.dart';
-import 'home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -40,40 +39,68 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _senhaController.dispose();
     _confirmarSenhaController.dispose();
+
     _nomeFocus.dispose();
     _emailFocus.dispose();
     _senhaFocus.dispose();
     _confirmarSenhaFocus.dispose();
+
     super.dispose();
   }
 
   String? _validarNome(String? value) {
     final nome = value?.trim() ?? '';
-    if (nome.isEmpty) return 'Informe seu nome';
+
+    if (nome.isEmpty) {
+      return 'Informe seu nome';
+    }
+
     if (nome.trim().split(RegExp(r'\s+')).length < 2) {
       return 'Informe nome e sobrenome';
     }
+
     return null;
   }
 
   String? _validarEmail(String? value) {
     final email = value?.trim() ?? '';
-    if (email.isEmpty) return 'Informe seu e-mail';
-    if (!_emailRegex.hasMatch(email)) return 'E-mail inválido';
+
+    if (email.isEmpty) {
+      return 'Informe seu e-mail';
+    }
+
+    if (!_emailRegex.hasMatch(email)) {
+      return 'E-mail inválido';
+    }
+
     return null;
   }
 
   String? _validarSenha(String? value) {
     final senha = value ?? '';
-    if (senha.isEmpty) return 'Crie uma senha';
-    if (senha.length < 6) return 'A senha deve ter ao menos 6 caracteres';
+
+    if (senha.isEmpty) {
+      return 'Crie uma senha';
+    }
+
+    if (senha.length < 6) {
+      return 'A senha deve ter ao menos 6 caracteres';
+    }
+
     return null;
   }
 
   String? _validarConfirmarSenha(String? value) {
     final confirmar = value ?? '';
-    if (confirmar.isEmpty) return 'Confirme sua senha';
-    if (confirmar != _senhaController.text) return 'As senhas não coincidem';
+
+    if (confirmar.isEmpty) {
+      return 'Confirme sua senha';
+    }
+
+    if (confirmar != _senhaController.text) {
+      return 'As senhas não coincidem';
+    }
+
     return null;
   }
 
@@ -87,11 +114,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (!_aceitouTermos) {
       HapticFeedback.lightImpact();
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Você precisa aceitar os termos de uso.'),
         ),
       );
+
       return;
     }
 
@@ -105,12 +134,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-        (route) => false,
+
+      // Cadastro realizado com sucesso.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Conta criada com sucesso!'),
+          duration: Duration(seconds: 2),
+        ),
       );
+
+      // Volta para a tela de login anterior.
+      Navigator.of(context).pop();
     } on ApiException catch (e) {
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.mensagem),
@@ -119,16 +156,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Não foi possível conectar ao servidor. Verifique sua conexão.',
+            'Não foi possível conectar ao servidor. '
+            'Verifique sua conexão.',
           ),
           backgroundColor: AppColors.error,
         ),
       );
     } finally {
-      if (mounted) setState(() => _carregando = false);
+      if (mounted) {
+        setState(() => _carregando = false);
+      }
     }
   }
 
@@ -151,7 +192,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onPressed: _carregando
                         ? null
                         : () => Navigator.of(context).maybePop(),
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                    ),
                     color: AppColors.textPrimary,
                   ),
                 ],
@@ -163,10 +206,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 430),
+                    constraints: const BoxConstraints(
+                      maxWidth: 430,
+                    ),
                     child: Form(
                       key: _formKey,
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      autovalidateMode:
+                          AutovalidateMode.onUserInteraction,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -174,7 +220,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             width: 60,
                             height: 60,
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
+                              color: AppColors.primary.withValues(
+                                alpha: 0.1,
+                              ),
                               borderRadius: BorderRadius.circular(18),
                             ),
                             child: const Icon(
@@ -183,10 +231,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               size: 30,
                             ),
                           ),
+
                           const SizedBox(height: 18),
-                          Text('Criar conta', style: textTheme.headlineMedium
-                              ?.copyWith(color: AppColors.textPrimary)),
+
+                          Text(
+                            'Criar conta',
+                            style: textTheme.headlineMedium?.copyWith(
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+
                           const SizedBox(height: 6),
+
                           Text(
                             'Cadastre-se para receber alertas de '
                             'alagamento na sua região',
@@ -195,58 +251,90 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                           const SizedBox(height: 28),
 
-                          Text('Nome completo', style: textTheme.labelLarge),
+                          Text(
+                            'Nome completo',
+                            style: textTheme.labelLarge,
+                          ),
+
                           const SizedBox(height: 8),
+
                           TextFormField(
                             controller: _nomeController,
                             focusNode: _nomeFocus,
                             textInputAction: TextInputAction.next,
                             textCapitalization: TextCapitalization.words,
-                            autofillHints: const [AutofillHints.name],
+                            autofillHints: const [
+                              AutofillHints.name,
+                            ],
                             validator: _validarNome,
                             onFieldSubmitted: (_) =>
-                                FocusScope.of(context).requestFocus(_emailFocus),
+                                FocusScope.of(context)
+                                    .requestFocus(_emailFocus),
                             decoration: const InputDecoration(
                               hintText: 'Digite seu nome completo',
-                              prefixIcon: Icon(Icons.person_outline),
+                              prefixIcon: Icon(
+                                Icons.person_outline,
+                              ),
                             ),
                           ),
 
                           const SizedBox(height: 18),
 
-                          Text('E-mail', style: textTheme.labelLarge),
+                          Text(
+                            'E-mail',
+                            style: textTheme.labelLarge,
+                          ),
+
                           const SizedBox(height: 8),
+
                           TextFormField(
                             controller: _emailController,
                             focusNode: _emailFocus,
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
-                            autofillHints: const [AutofillHints.email],
+                            autofillHints: const [
+                              AutofillHints.email,
+                            ],
                             validator: _validarEmail,
                             onFieldSubmitted: (_) =>
-                                FocusScope.of(context).requestFocus(_senhaFocus),
+                                FocusScope.of(context)
+                                    .requestFocus(_senhaFocus),
                             decoration: const InputDecoration(
                               hintText: 'Digite seu e-mail',
-                              prefixIcon: Icon(Icons.email_outlined),
+                              prefixIcon: Icon(
+                                Icons.email_outlined,
+                              ),
                             ),
                           ),
 
                           const SizedBox(height: 18),
 
-                          Text('Senha', style: textTheme.labelLarge),
+                          Text(
+                            'Senha',
+                            style: textTheme.labelLarge,
+                          ),
+
                           const SizedBox(height: 8),
+
                           TextFormField(
                             controller: _senhaController,
                             focusNode: _senhaFocus,
                             obscureText: !_mostrarSenha,
                             textInputAction: TextInputAction.next,
-                            autofillHints: const [AutofillHints.newPassword],
+                            autofillHints: const [
+                              AutofillHints.newPassword,
+                            ],
                             validator: _validarSenha,
-                            onFieldSubmitted: (_) => FocusScope.of(context)
-                                .requestFocus(_confirmarSenhaFocus),
+                            onFieldSubmitted: (_) =>
+                                FocusScope.of(context)
+                                    .requestFocus(
+                                      _confirmarSenhaFocus,
+                                    ),
                             decoration: InputDecoration(
                               hintText: 'Crie uma senha',
-                              prefixIcon: const Icon(Icons.lock_outline),
+                              prefixIcon: const Icon(
+                                Icons.lock_outline,
+                              ),
                               suffixIcon: IconButton(
                                 tooltip: _mostrarSenha
                                     ? 'Ocultar senha'
@@ -257,7 +345,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       : Icons.visibility_outlined,
                                 ),
                                 onPressed: () {
-                                  setState(() => _mostrarSenha = !_mostrarSenha);
+                                  setState(() {
+                                    _mostrarSenha =
+                                        !_mostrarSenha;
+                                  });
                                 },
                               ),
                             ),
@@ -265,19 +356,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                           const SizedBox(height: 18),
 
-                          Text('Confirmar senha', style: textTheme.labelLarge),
+                          Text(
+                            'Confirmar senha',
+                            style: textTheme.labelLarge,
+                          ),
+
                           const SizedBox(height: 8),
+
                           TextFormField(
                             controller: _confirmarSenhaController,
                             focusNode: _confirmarSenhaFocus,
                             obscureText: !_mostrarConfirmarSenha,
                             textInputAction: TextInputAction.done,
-                            autofillHints: const [AutofillHints.newPassword],
+                            autofillHints: const [
+                              AutofillHints.newPassword,
+                            ],
                             validator: _validarConfirmarSenha,
                             onFieldSubmitted: (_) => _criarConta(),
                             decoration: InputDecoration(
                               hintText: 'Repita a senha',
-                              prefixIcon: const Icon(Icons.lock_outline),
+                              prefixIcon: const Icon(
+                                Icons.lock_outline,
+                              ),
                               suffixIcon: IconButton(
                                 tooltip: _mostrarConfirmarSenha
                                     ? 'Ocultar senha'
@@ -288,8 +388,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       : Icons.visibility_outlined,
                                 ),
                                 onPressed: () {
-                                  setState(() => _mostrarConfirmarSenha =
-                                      !_mostrarConfirmarSenha);
+                                  setState(() {
+                                    _mostrarConfirmarSenha =
+                                        !_mostrarConfirmarSenha;
+                                  });
                                 },
                               ),
                             ),
@@ -298,7 +400,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 18),
 
                           Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
                             children: [
                               SizedBox(
                                 width: 24,
@@ -307,40 +410,59 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   value: _aceitouTermos,
                                   activeColor: AppColors.primary,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(6),
+                                    borderRadius:
+                                        BorderRadius.circular(6),
                                   ),
                                   onChanged: _carregando
                                       ? null
-                                      : (value) => setState(
-                                          () => _aceitouTermos = value ?? false),
+                                      : (value) {
+                                          setState(() {
+                                            _aceitouTermos =
+                                                value ?? false;
+                                          });
+                                        },
                                 ),
                               ),
+
                               const SizedBox(width: 10),
+
                               Expanded(
                                 child: GestureDetector(
                                   onTap: _carregando
                                       ? null
-                                      : () => setState(
-                                          () => _aceitouTermos = !_aceitouTermos),
+                                      : () {
+                                          setState(() {
+                                            _aceitouTermos =
+                                                !_aceitouTermos;
+                                          });
+                                        },
                                   child: Text.rich(
                                     TextSpan(
                                       style: textTheme.bodySmall,
                                       children: [
                                         const TextSpan(
-                                            text: 'Li e aceito os '),
+                                          text: 'Li e aceito os ',
+                                        ),
                                         TextSpan(
                                           text: 'Termos de Uso',
                                           style: TextStyle(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.w700,
+                                            color:
+                                                AppColors.primary,
+                                            fontWeight:
+                                                FontWeight.w700,
                                           ),
                                         ),
-                                        const TextSpan(text: ' e a '),
+                                        const TextSpan(
+                                          text: ' e a ',
+                                        ),
                                         TextSpan(
-                                          text: 'Política de Privacidade',
+                                          text:
+                                              'Política de Privacidade',
                                           style: TextStyle(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.w700,
+                                            color:
+                                                AppColors.primary,
+                                            fontWeight:
+                                                FontWeight.w700,
                                           ),
                                         ),
                                       ],
@@ -357,14 +479,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             width: double.infinity,
                             height: 52,
                             child: ElevatedButton(
-                              onPressed: _carregando ? null : _criarConta,
+                              onPressed:
+                                  _carregando ? null : _criarConta,
                               child: _carregando
                                   ? const SizedBox(
                                       width: 22,
                                       height: 22,
-                                      child: CircularProgressIndicator(
+                                      child:
+                                          CircularProgressIndicator(
                                         strokeWidth: 2.4,
-                                        valueColor: AlwaysStoppedAnimation(
+                                        valueColor:
+                                            AlwaysStoppedAnimation(
                                           Colors.white,
                                         ),
                                       ),
@@ -379,15 +504,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             child: Wrap(
                               alignment: WrapAlignment.center,
                               children: [
-                                Text('Já tem uma conta? ',
-                                    style: textTheme.bodySmall),
+                                Text(
+                                  'Já tem uma conta? ',
+                                  style: textTheme.bodySmall,
+                                ),
                                 GestureDetector(
                                   onTap: _carregando
                                       ? null
-                                      : () => Navigator.of(context).maybePop(),
+                                      : () => Navigator.of(context)
+                                          .maybePop(),
                                   child: Text(
                                     'Entrar',
-                                    style: textTheme.bodySmall?.copyWith(
+                                    style:
+                                        textTheme.bodySmall?.copyWith(
                                       color: AppColors.primary,
                                       fontWeight: FontWeight.w700,
                                     ),

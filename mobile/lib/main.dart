@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'screens/alerts_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/map_screen.dart';
+import 'screens/login_screen.dart';
 
 void main() {
   runApp(const FloodAlertApp());
@@ -132,10 +133,11 @@ class FloodAlertApp extends StatelessWidget {
       ),
 
       // A tela inicial continua sendo a HomeScreen.
-      home: const MainNavigation(),
+      home: const LoginScreen(),
     );
   }
 }
+
 
 /// Controla a navegação principal entre as telas do aplicativo.
 class MainNavigation extends StatefulWidget {

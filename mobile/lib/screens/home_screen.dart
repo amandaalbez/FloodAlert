@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import 'map_screen.dart';
 
 enum NivelRisco { baixo, moderado, alto }
 
@@ -18,12 +19,12 @@ class AlertaItem {
   });
 }
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
+class HomeScreen extends StatefulWidget { 
+  const HomeScreen({super.key}); 
+  
+  @override State<HomeScreen> createState() => 
+  _HomeScreenState(); 
+  }
 
 class _HomeScreenState extends State<HomeScreen> {
   // TODO: substituir por dados reais vindos da API / sensores
@@ -118,9 +119,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 icone: _iconeDoRisco(_riscoAtual),
                 texto: _textoDoRisco(_riscoAtual),
                 local: _bairroAtual,
-                onVerMapa: () {
-                  // TODO: abrir mapa em tela cheia
-                },
+               onVerMapa: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const MapScreen(),
+                  ),
+                );
+              },
               ),
 
               const SizedBox(height: 14),

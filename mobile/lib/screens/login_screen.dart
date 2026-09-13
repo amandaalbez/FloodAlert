@@ -70,7 +70,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(
+          builder: (_) => const MainNavigation(),
+        ),
       );
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -327,12 +329,25 @@ class _LoginScreenState extends State<LoginScreen> {
                                   GestureDetector(
                                     onTap: _carregando
                                         ? null
-                                        : () => Navigator.of(context).push(
-                                              MaterialPageRoute(
-                                                builder: (_) =>
-                                                    const RegisterScreen(),
-                                              ),
+                                        : () async {
+                                            final cadastroRealizado =
+                                                await Navigator.of(context).push<bool>(
+                                            MaterialPageRoute(
+                                              builder: (_) => const RegisterScreen(),
                                             ),
+                                          );
+
+                                          if (!mounted) return;
+
+                                          if (cadastroRealizado == true) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                content: Text('Conta criada com sucesso!'),
+                                                duration: Duration(seconds: 3),
+                                              ),
+                                            );
+                                          }
+                                        },
                                     child: Text(
                                       'Criar uma conta',
                                       style: textTheme.bodySmall?.copyWith(
@@ -351,7 +366,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-            ),
+            ), 
             const SizedBox(height: 8),
             if (kDebugMode)
               Center(

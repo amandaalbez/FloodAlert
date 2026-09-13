@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import '../services/api_exception.dart';
+import '../services/api_service.dart';
+import '../utils/formatadores.dart';
 import 'home_screen.dart' show AlertaItem, NivelRisco;
 
 enum _Filtro { todos, baixo, moderado, alto }
@@ -15,45 +18,43 @@ class AlertsScreen extends StatefulWidget {
 class _AlertsScreenState extends State<AlertsScreen> {
   _Filtro _filtroAtual = _Filtro.todos;
 
-  // TODO: substituir por dados reais vindos da API
-  final List<AlertaItem> _alertas = const [
-    AlertaItem(
-      titulo: 'Nível do rio subindo rapidamente',
-      local: 'Rio Joana - Tijuca',
-      horario: 'Há 12 min',
-      nivel: NivelRisco.alto,
-    ),
-    AlertaItem(
-      titulo: 'Chuva forte prevista para as próximas horas',
-      local: 'Zona Norte, Rio de Janeiro',
-      horario: 'Há 45 min',
-      nivel: NivelRisco.moderado,
-    ),
-    AlertaItem(
-      titulo: 'Bueiro entupido reportado por moradores',
-      local: 'Praça Saens Peña',
-      horario: 'Há 2 h',
-      nivel: NivelRisco.moderado,
-    ),
-    AlertaItem(
-      titulo: 'Via interditada por acúmulo de água',
-      local: 'Av. Maracanã',
-      horario: 'Há 3 h',
-      nivel: NivelRisco.alto,
-    ),
-    AlertaItem(
-      titulo: 'Nível normalizado após chuva de ontem',
-      local: 'Grande Tijuca',
-      horario: 'Há 1 dia',
-      nivel: NivelRisco.baixo,
-    ),
-    AlertaItem(
-      titulo: 'Vistoria preventiva concluída sem riscos',
-      local: 'Rio Comprido',
-      horario: 'Há 1 dia',
-      nivel: NivelRisco.baixo,
-    ),
-  ];
+  bool _carregando = true;
+  String? _erro;
+  List<AlertaItem> _alertas = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarAlertas();
+  }
+
+  Future<void> _carregarAlertas() async {
+    setState(() {
+      _carregando = true;
+      _erro = null;
+    });
+
+    try {
+      final dados = await ApiService.listarAlertas();
+      setState(() {
+        _alertas = dados.map((item) {
+          final mapa = item as Map<String, dynamic>;
+          return AlertaItem(
+            titulo: mapa['titulo'] as String,
+            local: mapa['local'] as String,
+            horario: horarioRelativo(DateTime.parse(mapa['criado_em'] as String)),
+            nivel: nivelRiscoDeTexto(mapa['nivel'] as String),
+          );
+        }).toList();
+      });
+    } on ApiException catch (e) {
+      setState(() => _erro = e.mensagem);
+    } catch (e) {
+      setState(() => _erro = 'Não foi possível carregar os alertas.');
+    } finally {
+      if (mounted) setState(() => _carregando = false);
+    }
+  }
 
   Color _corDoRisco(NivelRisco nivel) {
     switch (nivel) {
@@ -169,28 +170,30 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
             // ---------- Lista ----------
             Expanded(
-              child: alertasFiltrados.isEmpty
-                  ? _EstadoVazio(textTheme: textTheme)
-                  : RefreshIndicator(
-                      color: AppColors.primary,
-                      onRefresh: () async {
-                        // TODO: recarregar dados reais da API
-                        await Future.delayed(
-                            const Duration(milliseconds: 800));
-                      },
-                      child: ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                        itemCount: alertasFiltrados.length,
-                        itemBuilder: (context, index) {
-                          final alerta = alertasFiltrados[index];
-                          return _AlertaDetalheCard(
-                            alerta: alerta,
-                            cor: _corDoRisco(alerta.nivel),
-                            icone: _iconeDoRisco(alerta.nivel),
-                          );
-                        },
-                      ),
-                    ),
+              child: _carregando
+                  ? const Center(
+                      child: CircularProgressIndicator(color: AppColors.primary),
+                    )
+                  : _erro != null
+                      ? _EstadoErro(mensagem: _erro!, onTentarNovamente: _carregarAlertas)
+                      : alertasFiltrados.isEmpty
+                          ? _EstadoVazio(textTheme: textTheme)
+                          : RefreshIndicator(
+                              color: AppColors.primary,
+                              onRefresh: _carregarAlertas,
+                              child: ListView.builder(
+                                padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                                itemCount: alertasFiltrados.length,
+                                itemBuilder: (context, index) {
+                                  final alerta = alertasFiltrados[index];
+                                  return _AlertaDetalheCard(
+                                    alerta: alerta,
+                                    cor: _corDoRisco(alerta.nivel),
+                                    icone: _iconeDoRisco(alerta.nivel),
+                                  );
+                                },
+                              ),
+                            ),
             ),
           ],
         ),
@@ -379,6 +382,39 @@ class _AlertaDetalheCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EstadoErro extends StatelessWidget {
+  final String mensagem;
+  final VoidCallback onTentarNovamente;
+
+  const _EstadoErro({required this.mensagem, required this.onTentarNovamente});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.textSecondary),
+            const SizedBox(height: 16),
+            Text(
+              mensagem,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
+            ),
+            const SizedBox(height: 20),
+            OutlinedButton(
+              onPressed: onTentarNovamente,
+              child: const Text('Tentar novamente'),
+            ),
+          ],
         ),
       ),
     );
