@@ -3,7 +3,7 @@ import os
 
 from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
@@ -23,6 +23,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Authorize, em vez do formulário usuário/senha do fluxo OAuth2 completo
 # (que não faz sentido pra gente, já que nosso /auth/login recebe JSON).
 bearer_scheme = HTTPBearer()
+
+# tokenUrl é só o endpoint mostrado na documentação /docs, não afeta a lógica.
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 def gerar_hash_senha(senha: str) -> str:
@@ -49,7 +52,9 @@ def usuario_atual(
         detail="Não foi possível validar as credenciais",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
     token = credenciais.credentials
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         usuario_id = payload.get("sub")

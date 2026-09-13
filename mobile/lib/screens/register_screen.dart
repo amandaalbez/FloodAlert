@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../main.dart';
+import '../services/api_exception.dart';
+import '../services/api_service.dart';
+import 'home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -95,20 +98,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _carregando = true);
 
     try {
-      // TODO: substituir pela chamada real à API de cadastro
-      await Future.delayed(const Duration(seconds: 1));
+      await ApiService.registrar(
+        nome: _nomeController.text.trim(),
+        email: _emailController.text.trim(),
+        senha: _senhaController.text,
+      );
 
       if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false,
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cadastro será conectado à API posteriormente.'),
+        SnackBar(
+          content: Text(e.mensagem),
+          backgroundColor: AppColors.error,
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Não foi possível criar a conta. Tente novamente.'),
+          content: Text(
+            'Não foi possível conectar ao servidor. Verifique sua conexão.',
+          ),
           backgroundColor: AppColors.error,
         ),
       );

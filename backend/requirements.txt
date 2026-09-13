@@ -4,6 +4,10 @@ sqlalchemy==2.0.35
 pymysql==1.1.1
 cryptography==43.0.1
 passlib[bcrypt]==1.7.4
+<<<<<<< HEAD
+=======
+bcrypt==4.0.1
+>>>>>>> 31fe70197b6ac952d82e32aa7a0ef41fbdde1a22
 python-jose[cryptography]==3.3.0
 pydantic[email]==2.9.2
 python-dotenv==1.0.1
