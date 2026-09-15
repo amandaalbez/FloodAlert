@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../main.dart';
@@ -30,18 +31,72 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   final MapController _controller = MapController();
 
-  // Centro inicial do mapa (Tijuca, Rio de Janeiro) — usado até os
-  // pontos reais chegarem da API.
+  // Centro inicial do mapa (Tijuca, Rio de Janeiro) — usado até a
+  // localização real do usuário (ou os pontos da API) chegarem.
   static const _posicaoInicial = LatLng(-22.9249, -43.2277);
 
   bool _carregando = true;
   String? _erro;
   List<RiscoPonto> _pontos = [];
 
+  LatLng? _minhaPosicao;
+  bool _buscandoLocalizacao = true;
+  String? _avisoLocalizacao;
+
   @override
   void initState() {
     super.initState();
     _carregarPontos();
+    _obterLocalizacaoAtual();
+  }
+
+  /// Pede permissão e busca a localização real do dispositivo. Se o
+  /// usuário negar ou o serviço estiver desligado, o mapa continua
+  /// funcionando normalmente, só sem centralizar na posição dele.
+  Future<void> _obterLocalizacaoAtual() async {
+    setState(() {
+      _buscandoLocalizacao = true;
+      _avisoLocalizacao = null;
+    });
+
+    try {
+      final servicoAtivo = await Geolocator.isLocationServiceEnabled();
+      if (!servicoAtivo) {
+        setState(() => _avisoLocalizacao =
+            'Ative a localização do dispositivo para ver sua posição no mapa.');
+        return;
+      }
+
+      var permissao = await Geolocator.checkPermission();
+      if (permissao == LocationPermission.denied) {
+        permissao = await Geolocator.requestPermission();
+      }
+
+      if (permissao == LocationPermission.denied ||
+          permissao == LocationPermission.deniedForever) {
+        setState(() => _avisoLocalizacao =
+            'Permissão de localização negada. Habilite para centralizar o mapa na sua posição.');
+        return;
+      }
+
+      final posicao = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+
+      if (!mounted) return;
+      final minhaLatLng = LatLng(posicao.latitude, posicao.longitude);
+      setState(() => _minhaPosicao = minhaLatLng);
+      _controller.move(minhaLatLng, 15);
+    } catch (e) {
+      if (mounted) {
+        setState(() =>
+            _avisoLocalizacao = 'Não foi possível obter sua localização.');
+      }
+    } finally {
+      if (mounted) setState(() => _buscandoLocalizacao = false);
+    }
   }
 
   NivelMapa _parseNivel(String texto) {
@@ -201,36 +256,58 @@ class _MapScreenState extends State<MapScreen> {
       );
     }
 
-    final marcadores = _pontos.map((ponto) {
-      final cor = _corDoNivel(ponto.nivel);
-      return Marker(
-        point: ponto.posicao,
-        width: 40,
-        height: 40,
-        child: GestureDetector(
-          onTap: () => _mostrarInfo(ponto),
+    final marcadores = [
+      ..._pontos.map((ponto) {
+        final cor = _corDoNivel(ponto.nivel);
+        return Marker(
+          point: ponto.posicao,
+          width: 40,
+          height: 40,
+          child: GestureDetector(
+            onTap: () => _mostrarInfo(ponto),
+            child: Container(
+              decoration: BoxDecoration(
+                color: cor,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: cor.withValues(alpha: 0.5),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.water_drop_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+          ),
+        );
+      }),
+      if (_minhaPosicao != null)
+        Marker(
+          point: _minhaPosicao!,
+          width: 26,
+          height: 26,
           child: Container(
             decoration: BoxDecoration(
-              color: cor,
+              color: AppColors.primary,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2.5),
+              border: Border.all(color: Colors.white, width: 3),
               boxShadow: [
                 BoxShadow(
-                  color: cor.withValues(alpha: 0.5),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
+                  color: AppColors.primary.withValues(alpha: 0.5),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.water_drop_rounded,
-              color: Colors.white,
-              size: 18,
-            ),
           ),
         ),
-      );
-    }).toList();
+    ];
 
     final circulos = _pontos.map((ponto) {
       final cor = _corDoNivel(ponto.nivel);
@@ -250,8 +327,8 @@ class _MapScreenState extends State<MapScreen> {
         children: [
           FlutterMap(
             mapController: _controller,
-            options: const MapOptions(
-              initialCenter: _posicaoInicial,
+            options: MapOptions(
+              initialCenter: _minhaPosicao ?? _posicaoInicial,
               initialZoom: 14.5,
             ),
             children: [
@@ -303,6 +380,71 @@ class _MapScreenState extends State<MapScreen> {
                       ),
                     ),
                   ],
+                ),
+              ),
+            ),
+          ),
+
+          // Aviso de localização (só aparece se algo impedir de obter a posição)
+          if (_avisoLocalizacao != null)
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 70, 20, 0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.secondary.withValues(alpha: 0.4)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.location_off_rounded,
+                          size: 18, color: Color(0xFFB57724)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _avisoLocalizacao!,
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            color: Color(0xFFB57724),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // Botão de recentralizar na minha localização
+          Positioned(
+            right: 16,
+            bottom: 92,
+            child: Material(
+              color: AppColors.surface,
+              shape: const CircleBorder(),
+              elevation: 3,
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: _buscandoLocalizacao ? null : _obterLocalizacaoAtual,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: _buscandoLocalizacao
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: AppColors.primary,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.my_location_rounded,
+                          color: AppColors.primary,
+                          size: 22,
+                        ),
                 ),
               ),
             ),
