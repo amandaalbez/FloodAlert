@@ -136,4 +136,26 @@ class ApiService {
     }
     throw ApiException('Não foi possível carregar os alertas (${resposta.statusCode}).');
   }
+
+  // ---------------------------------------------------------------------
+  // Reportar alagamento
+  // ---------------------------------------------------------------------
+  static Future<void> criarReporte({
+    required String descricao,
+    required String nivel,
+    double? latitude,
+    double? longitude,
+  }) async {
+    final resposta = await http.post(
+      Uri.parse('$baseUrl/reportes'),
+      headers: _headersAutenticado,
+      body: jsonEncode({
+        'descricao': descricao,
+        'nivel': nivel,
+        'latitude': latitude,
+        'longitude': longitude,
+      }),
+    );
+    _tratarResposta(resposta);
+  }
 }

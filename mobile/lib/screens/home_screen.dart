@@ -5,6 +5,7 @@ import '../services/api_exception.dart';
 import '../services/api_service.dart';
 import '../services/localizacao_service.dart';
 import '../utils/formatadores.dart';
+import '../widgets/reportar_alagamento_sheet.dart';
 import 'map_screen.dart';
 
 enum NivelRisco { baixo, moderado, alto }
@@ -221,8 +222,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
-                            onPressed: () {
-                              // TODO: abrir fluxo de reportar alagamento
+                            onPressed: () async {
+                              final enviado = await Navigator.of(context).push<bool>(
+                                MaterialPageRoute(
+                                  builder: (_) => const ReportarAlagamentoScreen(),
+                                ),
+                              );
+                              if (enviado == true && mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Obrigado! Seu reporte foi enviado.',
+                                    ),
+                                    backgroundColor: Color(0xFF2E9E6B),
+                                  ),
+                                );
+                              }
                             },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.primary,

@@ -74,6 +74,7 @@ class Reporte(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     descricao = Column(Text, nullable=False)
+    nivel = Column(Enum(NivelRisco), nullable=False, default=NivelRisco.moderado)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     criado_em = Column(DateTime, default=dt.datetime.utcnow)

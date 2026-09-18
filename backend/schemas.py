@@ -62,6 +62,7 @@ class AlertaSaida(BaseModel):
 # ---------- Reportar alagamento ----------
 class ReporteCriar(BaseModel):
     descricao: str
+    nivel: NivelRisco
     latitude: Optional[float] = None
     longitude: Optional[float] = None
 
@@ -69,6 +70,7 @@ class ReporteCriar(BaseModel):
 class ReporteSaida(BaseModel):
     id: int
     descricao: str
+    nivel: NivelRisco
     criado_em: dt.datetime
 
     model_config = ConfigDict(from_attributes=True)

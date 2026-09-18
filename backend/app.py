@@ -139,6 +139,7 @@ def criar_reporte(
 ):
     reporte = models.Reporte(
         descricao=dados.descricao,
+        nivel=dados.nivel,
         latitude=dados.latitude,
         longitude=dados.longitude,
         usuario_id=usuario.id,
