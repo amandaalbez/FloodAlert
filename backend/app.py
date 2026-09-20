@@ -148,3 +148,16 @@ def criar_reporte(
     db.commit()
     db.refresh(reporte)
     return reporte
+
+
+@app.get("/reportes", response_model=List[schemas.ReporteSaida], tags=["Reportes"])
+def listar_reportes(db: Session = Depends(get_db)):
+    """Lista os reportes recentes, para exibir como pinos no mapa.
+    Não exige login: qualquer pessoa pode ver as ocorrências reportadas."""
+    return (
+        db.query(models.Reporte)
+        .filter(models.Reporte.latitude.isnot(None), models.Reporte.longitude.isnot(None))
+        .order_by(models.Reporte.criado_em.desc())
+        .limit(200)
+        .all()
+    )

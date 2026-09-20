@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import '../main.dart';
 import '../services/api_exception.dart';
 import '../services/api_service.dart';
+import '../utils/formatadores.dart' show horarioRelativo;
 
 enum NivelMapa { baixo, moderado, alto }
 
@@ -18,6 +19,21 @@ class RiscoPonto {
     required this.nome,
     required this.posicao,
     required this.nivel,
+  });
+}
+
+/// Um alagamento reportado por um morador, para mostrar como pino no mapa.
+class ReporteMapa {
+  final String descricao;
+  final LatLng posicao;
+  final NivelMapa nivel;
+  final DateTime criadoEm;
+
+  const ReporteMapa({
+    required this.descricao,
+    required this.posicao,
+    required this.nivel,
+    required this.criadoEm,
   });
 }
 
@@ -38,6 +54,7 @@ class _MapScreenState extends State<MapScreen> {
   bool _carregando = true;
   String? _erro;
   List<RiscoPonto> _pontos = [];
+  List<ReporteMapa> _reportes = [];
 
   LatLng? _minhaPosicao;
   bool _buscandoLocalizacao = true;
@@ -118,9 +135,15 @@ class _MapScreenState extends State<MapScreen> {
     });
 
     try {
-      final dados = await ApiService.pontosDoMapa();
+      final resultados = await Future.wait([
+        ApiService.pontosDoMapa(),
+        ApiService.listarReportes(),
+      ]);
+      final dadosPontos = resultados[0];
+      final dadosReportes = resultados[1];
+
       setState(() {
-        _pontos = dados.map((item) {
+        _pontos = dadosPontos.map((item) {
           final mapa = item as Map<String, dynamic>;
           return RiscoPonto(
             nome: mapa['nome'] as String,
@@ -129,6 +152,19 @@ class _MapScreenState extends State<MapScreen> {
               (mapa['longitude'] as num).toDouble(),
             ),
             nivel: _parseNivel(mapa['nivel_risco'] as String),
+          );
+        }).toList();
+
+        _reportes = dadosReportes.map((item) {
+          final mapa = item as Map<String, dynamic>;
+          return ReporteMapa(
+            descricao: mapa['descricao'] as String,
+            posicao: LatLng(
+              (mapa['latitude'] as num).toDouble(),
+              (mapa['longitude'] as num).toDouble(),
+            ),
+            nivel: _parseNivel(mapa['nivel'] as String),
+            criadoEm: DateTime.parse(mapa['criado_em'] as String),
           );
         }).toList();
       });
@@ -219,6 +255,90 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  void _mostrarInfoReporte(ReporteMapa reporte) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: _corDoNivel(reporte.nivel).withValues(alpha: 0.14),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.campaign_rounded,
+                    color: _corDoNivel(reporte.nivel),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'Risco ${_textoDoNivel(reporte.nivel)}',
+                            style: TextStyle(
+                              color: _corDoNivel(reporte.nivel),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            '· Reportado por morador',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        horarioRelativo(reporte.criadoEm),
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              reporte.descricao,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14.5,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_carregando) {
@@ -282,6 +402,36 @@ class _MapScreenState extends State<MapScreen> {
                 Icons.water_drop_rounded,
                 color: Colors.white,
                 size: 18,
+              ),
+            ),
+          ),
+        );
+      }),
+      ..._reportes.map((reporte) {
+        final cor = _corDoNivel(reporte.nivel);
+        return Marker(
+          point: reporte.posicao,
+          width: 38,
+          height: 38,
+          child: GestureDetector(
+            onTap: () => _mostrarInfoReporte(reporte),
+            child: Container(
+              decoration: BoxDecoration(
+                color: cor,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white, width: 2.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: cor.withValues(alpha: 0.5),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.campaign_rounded,
+                color: Colors.white,
+                size: 17,
               ),
             ),
           ),
@@ -377,6 +527,15 @@ class _MapScreenState extends State<MapScreen> {
                           color: AppColors.textPrimary,
                           fontSize: 15,
                         ),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: _carregarPontos,
+                      borderRadius: BorderRadius.circular(20),
+                      child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(Icons.refresh_rounded,
+                            color: AppColors.textSecondary, size: 19),
                       ),
                     ),
                   ],

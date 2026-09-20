@@ -71,6 +71,8 @@ class ReporteSaida(BaseModel):
     id: int
     descricao: str
     nivel: NivelRisco
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     criado_em: dt.datetime
 
     model_config = ConfigDict(from_attributes=True)

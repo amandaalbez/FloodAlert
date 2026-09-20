@@ -158,4 +158,16 @@ class ApiService {
     );
     _tratarResposta(resposta);
   }
+
+  static Future<List<dynamic>> listarReportes() async {
+    final resposta = await http.get(
+      Uri.parse('$baseUrl/reportes'),
+      headers: _headersJson,
+    );
+    final texto = utf8.decode(resposta.bodyBytes);
+    if (resposta.statusCode >= 200 && resposta.statusCode < 300) {
+      return jsonDecode(texto) as List<dynamic>;
+    }
+    throw ApiException('Não foi possível carregar os reportes (${resposta.statusCode}).');
+  }
 }
