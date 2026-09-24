@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../main.dart';
 import '../services/api_exception.dart';
 import '../services/api_service.dart';
+import '../services/eventos_app.dart';
 import '../services/localizacao_service.dart';
 import '../utils/formatadores.dart';
-import '../widgets/reportar_alagamento_sheet.dart';
+import 'reportar_alagamento_screen.dart';
 import 'map_screen.dart';
 
 enum NivelRisco { baixo, moderado, alto }
@@ -54,22 +56,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _carregarDados();
   }
 
-  /// Busca a localização real do dispositivo e converte num texto tipo
-  /// "Tijuca, Rio de Janeiro". Se o usuário negar a permissão ou algo
-  /// falhar, retorna null — quem chamar cai de volta no nome vindo do
-  /// backend, sem quebrar a tela.
-  Future<String?> _obterLocalizacaoReal() async {
-    try {
-      final posicao = await LocalizacaoService.obterPosicaoAtual();
-      return await LocalizacaoService.obterEnderecoLegivel(
-        posicao.latitude,
-        posicao.longitude,
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
   Future<void> _carregarDados() async {
     setState(() {
       _carregando = true;
@@ -77,9 +63,33 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      final regiao = await ApiService.regiaoDoUsuario();
+      // Busca a posição real do dispositivo primeiro — é usada tanto
+      // pra mostrar o endereço quanto pra pedir a previsão do tempo da
+      // localização certa (não da coordenada fixa do banco).
+      Position? posicao;
+      try {
+        posicao = await LocalizacaoService.obterPosicaoAtual();
+      } catch (_) {
+        posicao = null; // permissão negada, serviço desligado, etc.
+      }
+
+      final regiao = await ApiService.regiaoDoUsuario(
+        latitude: posicao?.latitude,
+        longitude: posicao?.longitude,
+      );
       final alertasBrutos = await ApiService.listarAlertas();
-      final localReal = await _obterLocalizacaoReal();
+
+      String? localReal;
+      if (posicao != null) {
+        try {
+          localReal = await LocalizacaoService.obterEnderecoLegivel(
+            posicao.latitude,
+            posicao.longitude,
+          );
+        } catch (_) {
+          localReal = null;
+        }
+      }
 
       setState(() {
         _riscoAtual = nivelRiscoDeTexto(regiao['nivel_risco'] as String);
@@ -229,6 +239,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               );
                               if (enviado == true && mounted) {
+                                EventosApp.instance.notificarNovoReporte();
+                                _carregarDados();
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(

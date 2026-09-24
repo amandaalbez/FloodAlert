@@ -105,11 +105,17 @@ class ApiService {
   // ---------------------------------------------------------------------
   // Home / Mapa / Alertas (prontos pra quando as telas forem consumir)
   // ---------------------------------------------------------------------
-  static Future<Map<String, dynamic>> regiaoDoUsuario() async {
-    final resposta = await http.get(
-      Uri.parse('$baseUrl/home/regiao'),
-      headers: _headersAutenticado,
+  static Future<Map<String, dynamic>> regiaoDoUsuario({
+    double? latitude,
+    double? longitude,
+  }) async {
+    final uri = Uri.parse('$baseUrl/home/regiao').replace(
+      queryParameters: {
+        if (latitude != null) 'latitude': latitude.toString(),
+        if (longitude != null) 'longitude': longitude.toString(),
+      },
     );
+    final resposta = await http.get(uri, headers: _headersAutenticado);
     return _tratarResposta(resposta);
   }
 

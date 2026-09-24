@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../main.dart';
 import '../services/api_exception.dart';
 import '../services/api_service.dart';
+import '../services/eventos_app.dart';
 import '../utils/formatadores.dart';
 import 'home_screen.dart' show AlertaItem, NivelRisco;
 
@@ -26,6 +27,19 @@ class _AlertsScreenState extends State<AlertsScreen> {
   void initState() {
     super.initState();
     _carregarAlertas();
+    // Recarrega sozinho sempre que um reporte novo é enviado em
+    // qualquer outra tela (ex: pela Home).
+    EventosApp.instance.novoReporte.addListener(_aoReceberNovoReporte);
+  }
+
+  @override
+  void dispose() {
+    EventosApp.instance.novoReporte.removeListener(_aoReceberNovoReporte);
+    super.dispose();
+  }
+
+  void _aoReceberNovoReporte() {
+    if (mounted) _carregarAlertas();
   }
 
   Future<void> _carregarAlertas() async {

@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import '../main.dart';
 import '../services/api_exception.dart';
 import '../services/api_service.dart';
+import '../services/eventos_app.dart';
 import '../utils/formatadores.dart' show horarioRelativo;
 
 enum NivelMapa { baixo, moderado, alto }
@@ -65,6 +66,19 @@ class _MapScreenState extends State<MapScreen> {
     super.initState();
     _carregarPontos();
     _obterLocalizacaoAtual();
+    // Recarrega sozinho sempre que um reporte novo é enviado em
+    // qualquer outra tela (ex: pela Home), sem precisar de botão manual.
+    EventosApp.instance.novoReporte.addListener(_aoReceberNovoReporte);
+  }
+
+  @override
+  void dispose() {
+    EventosApp.instance.novoReporte.removeListener(_aoReceberNovoReporte);
+    super.dispose();
+  }
+
+  void _aoReceberNovoReporte() {
+    if (mounted) _carregarPontos();
   }
 
   /// Pede permissão e busca a localização real do dispositivo. Se o

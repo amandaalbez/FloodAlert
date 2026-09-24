@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -6,6 +7,7 @@ from sqlalchemy.orm import Session
 
 import models
 import schemas
+from clima import obter_chance_chuva
 from database import Base, engine, get_db
 from security import criar_token, gerar_hash_senha, usuario_atual, verificar_senha
 
@@ -75,6 +77,8 @@ def login(dados: schemas.UsuarioLogin, db: Session = Depends(get_db)):
 # ---------------------------------------------------------------------------
 @app.get("/home/regiao", response_model=schemas.RegiaoSaida, tags=["Home"])
 def regiao_do_usuario(
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
     usuario: models.Usuario = Depends(usuario_atual),
     db: Session = Depends(get_db),
 ):
@@ -82,6 +86,10 @@ def regiao_do_usuario(
     Retorna os dados de risco da região do usuário logado (pelo bairro
     cadastrado no perfil). Se não achar uma correspondência exata,
     devolve a primeira região monitorada como fallback.
+
+    Se `latitude`/`longitude` forem informados (a posição real do
+    dispositivo, enviada pelo app), a chance de chuva é calculada para
+    essas coordenadas — não para o ponto fixo da região no banco.
 
     TODO: quando tiver geolocalização de verdade, trocar essa busca por
     "região monitorada mais próxima das coordenadas do usuário".
@@ -91,11 +99,30 @@ def regiao_do_usuario(
     if usuario.bairro:
         regiao = query.filter(models.RegiaoMonitorada.nome == usuario.bairro).first()
         if regiao:
-            return regiao
+            return _com_chuva_real(regiao, latitude, longitude)
 
     regiao = query.first()
     if not regiao:
         raise HTTPException(status_code=404, detail="Nenhuma região monitorada cadastrada")
+    return _com_chuva_real(regiao, latitude, longitude)
+
+
+def _com_chuva_real(
+    regiao: models.RegiaoMonitorada,
+    latitude_usuario: Optional[float] = None,
+    longitude_usuario: Optional[float] = None,
+) -> models.RegiaoMonitorada:
+    """Substitui a chance de chuva salva no banco pela previsão real do
+    Open-Meteo — usando a posição real do usuário quando disponível, ou
+    a coordenada fixa da região como respaldo. Se a chamada externa
+    falhar, mantém o valor do banco — o app não quebra por causa disso.
+    """
+    lat = latitude_usuario if latitude_usuario is not None else regiao.latitude
+    lon = longitude_usuario if longitude_usuario is not None else regiao.longitude
+
+    chance_real = obter_chance_chuva(lat, lon)
+    if chance_real is not None:
+        regiao.chance_chuva_percent = chance_real
     return regiao
 
 
@@ -147,16 +174,33 @@ def criar_reporte(
     db.add(reporte)
     db.commit()
     db.refresh(reporte)
+
+    # Todo reporte de morador também vira um alerta, para aparecer na
+    # aba Alertas do app (não só como pino no mapa).
+    alerta = models.Alerta(
+        titulo=dados.descricao[:200],
+        local="Reportado por um morador",
+        nivel=dados.nivel,
+    )
+    db.add(alerta)
+    db.commit()
+
     return reporte
 
 
 @app.get("/reportes", response_model=List[schemas.ReporteSaida], tags=["Reportes"])
 def listar_reportes(db: Session = Depends(get_db)):
-    """Lista os reportes recentes, para exibir como pinos no mapa.
+    """Lista os reportes das últimas 24h, para exibir como pinos no mapa.
+    Reportes mais antigos continuam salvos no banco, só somem do mapa.
     Não exige login: qualquer pessoa pode ver as ocorrências reportadas."""
+    limite = datetime.utcnow() - timedelta(hours=24)
     return (
         db.query(models.Reporte)
-        .filter(models.Reporte.latitude.isnot(None), models.Reporte.longitude.isnot(None))
+        .filter(
+            models.Reporte.latitude.isnot(None),
+            models.Reporte.longitude.isnot(None),
+            models.Reporte.criado_em >= limite,
+        )
         .order_by(models.Reporte.criado_em.desc())
         .limit(200)
         .all()

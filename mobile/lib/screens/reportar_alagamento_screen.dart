@@ -7,7 +7,7 @@ import '../main.dart';
 import '../services/api_exception.dart';
 import '../services/api_service.dart';
 import '../services/localizacao_service.dart';
-import '../screens/home_screen.dart' show NivelRisco;
+import 'home_screen.dart' show NivelRisco;
 
 /// Tela cheia para reportar um alagamento: mapa com um pino travado no
 /// centro (a pessoa arrasta o MAPA por baixo do pino pra posicionar),
