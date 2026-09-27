@@ -46,8 +46,6 @@ class _HomeScreenState extends State<HomeScreen> {
   NivelRisco _riscoAtual = NivelRisco.baixo;
   String _bairroAtual = '';
   int? _chanceChuvaPercent;
-  double? _nivelRioMetros;
-  double? _nivelRioMaximoMetros;
   List<AlertaItem> _alertas = [];
 
   @override
@@ -97,9 +95,6 @@ class _HomeScreenState extends State<HomeScreen> {
         // cadastrado no backend se a permissão for negada ou falhar.
         _bairroAtual = localReal ?? regiao['nome'] as String;
         _chanceChuvaPercent = regiao['chance_chuva_percent'] as int?;
-        _nivelRioMetros = (regiao['nivel_rio_metros'] as num?)?.toDouble();
-        _nivelRioMaximoMetros =
-            (regiao['nivel_rio_maximo_metros'] as num?)?.toDouble();
 
         _alertas = alertasBrutos.map((item) {
           final mapa = item as Map<String, dynamic>;
@@ -193,37 +188,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         const SizedBox(height: 14),
 
-                        // ---------- Indicadores rápidos ----------
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _IndicadorCard(
-                                icone: Icons.water_drop_rounded,
-                                cor: AppColors.primary,
-                                titulo: 'Nível do rio',
-                                valor: _nivelRioMetros != null
-                                    ? '${_nivelRioMetros!.toStringAsFixed(1)} m'
-                                    : '--',
-                                progresso: (_nivelRioMetros != null &&
-                                        _nivelRioMaximoMetros != null &&
-                                        _nivelRioMaximoMetros! > 0)
-                                    ? _nivelRioMetros! / _nivelRioMaximoMetros!
-                                    : 0,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _IndicadorCard(
-                                icone: Icons.umbrella_rounded,
-                                cor: AppColors.secondary,
-                                titulo: 'Chance de chuva',
-                                valor: _chanceChuvaPercent != null
-                                    ? '$_chanceChuvaPercent%'
-                                    : '--',
-                                progresso: (_chanceChuvaPercent ?? 0) / 100,
-                              ),
-                            ),
-                          ],
+                        // ---------- Indicador rápido ----------
+                        _IndicadorCard(
+                          icone: Icons.umbrella_rounded,
+                          cor: AppColors.secondary,
+                          titulo: 'Chance de chuva',
+                          valor: _chanceChuvaPercent != null
+                              ? '$_chanceChuvaPercent%'
+                              : '--',
+                          progresso: (_chanceChuvaPercent ?? 0) / 100,
                         ),
 
                         const SizedBox(height: 26),
