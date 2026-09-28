@@ -7,7 +7,7 @@ import '../main.dart';
 import '../services/api_exception.dart';
 import '../services/api_service.dart';
 import '../services/eventos_app.dart';
-//import '../utils/formatadores.dart' show horarioRelativo;
+import '../utils/formatadores.dart' show horarioRelativo;
 
 enum NivelMapa { baixo, moderado, alto }
 
@@ -54,6 +54,8 @@ class _MapScreenState extends State<MapScreen> {
 
   bool _carregando = true;
   String? _erro;
+  List<RiscoPonto> _pontos = [];
+  List<ReporteMapa> _reportes = [];
 
   LatLng? _minhaPosicao;
   bool _buscandoLocalizacao = true;
@@ -128,6 +130,17 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  NivelMapa _parseNivel(String texto) {
+    switch (texto) {
+      case 'baixo':
+        return NivelMapa.baixo;
+      case 'alto':
+        return NivelMapa.alto;
+      case 'moderado':
+      default:
+        return NivelMapa.moderado;
+    }
+  }
 
   Future<void> _carregarPontos() async {
     setState(() {
@@ -136,13 +149,45 @@ class _MapScreenState extends State<MapScreen> {
     });
 
     try {
-      await Future.wait([
+      final resultados = await Future.wait([
         ApiService.pontosDoMapa(),
         ApiService.listarReportes(),
       ]);
+      final dadosPontos = resultados[0];
+      final dadosReportes = resultados[1];
 
       setState(() {
+        _pontos = dadosPontos
+        .map((item) {
+          final mapa = item as Map<String, dynamic>;
+          return RiscoPonto(
+            nome: mapa['nome'] as String,
+            posicao: LatLng(
+              (mapa['latitude'] as num).toDouble(),
+              (mapa['longitude'] as num).toDouble(),
+            ),
+            nivel: _parseNivel(mapa['nivel_risco'] as String),
+          );
+        })
+        .where((ponto) =>
+            !ponto.nome.contains('Rio Joana') &&
+            !ponto.nome.contains('Tijuca') &&
+            !ponto.nome.contains('Praça Saens Peña') &&
+            !ponto.nome.contains('Zona Norte'))
+        .toList();
 
+        _reportes = dadosReportes.map((item) {
+          final mapa = item as Map<String, dynamic>;
+          return ReporteMapa(
+            descricao: mapa['descricao'] as String,
+            posicao: LatLng(
+              (mapa['latitude'] as num).toDouble(),
+              (mapa['longitude'] as num).toDouble(),
+            ),
+            nivel: _parseNivel(mapa['nivel'] as String),
+            criadoEm: DateTime.parse(mapa['criado_em'] as String),
+          );
+        }).toList();
       });
     } on ApiException catch (e) {
       setState(() => _erro = e.mensagem);
@@ -164,6 +209,156 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  String _textoDoNivel(NivelMapa nivel) {
+    switch (nivel) {
+      case NivelMapa.baixo:
+        return 'Baixo';
+      case NivelMapa.moderado:
+        return 'Moderado';
+      case NivelMapa.alto:
+        return 'Alto';
+    }
+  }
+
+  void _mostrarInfo(RiscoPonto ponto) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: _corDoNivel(ponto.nivel).withValues(alpha: 0.14),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.water_drop_rounded,
+                color: _corDoNivel(ponto.nivel),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    ponto.nome,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Risco ${_textoDoNivel(ponto.nivel)}',
+                    style: TextStyle(
+                      color: _corDoNivel(ponto.nivel),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _mostrarInfoReporte(ReporteMapa reporte) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: _corDoNivel(reporte.nivel).withValues(alpha: 0.14),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.campaign_rounded,
+                    color: _corDoNivel(reporte.nivel),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'Risco ${_textoDoNivel(reporte.nivel)}',
+                            style: TextStyle(
+                              color: _corDoNivel(reporte.nivel),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            '· Reportado por morador',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        horarioRelativo(reporte.criadoEm),
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              reporte.descricao,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14.5,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -202,28 +397,100 @@ class _MapScreenState extends State<MapScreen> {
       );
     }
 
-final List<Marker> marcadores = [
-  if (_minhaPosicao != null)
-    Marker(
-      point: _minhaPosicao!,
-      width: 26,
-      height: 26,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 3),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.5),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+    final marcadores = [
+      ..._pontos.map((ponto) {
+        final cor = _corDoNivel(ponto.nivel);
+        return Marker(
+          point: ponto.posicao,
+          width: 40,
+          height: 40,
+          child: GestureDetector(
+            onTap: () => _mostrarInfo(ponto),
+            child: Container(
+              decoration: BoxDecoration(
+                color: cor,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: cor.withValues(alpha: 0.5),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.water_drop_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
             ),
-          ],
+          ),
+        );
+      }),
+      ..._reportes.map((reporte) {
+        final cor = _corDoNivel(reporte.nivel);
+        return Marker(
+          point: reporte.posicao,
+          width: 38,
+          height: 38,
+          child: GestureDetector(
+            onTap: () => _mostrarInfoReporte(reporte),
+            child: Container(
+              decoration: BoxDecoration(
+                color: cor,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white, width: 2.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: cor.withValues(alpha: 0.5),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.campaign_rounded,
+                color: Colors.white,
+                size: 17,
+              ),
+            ),
+          ),
+        );
+      }),
+      if (_minhaPosicao != null)
+        Marker(
+          point: _minhaPosicao!,
+          width: 26,
+          height: 26,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.5),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
-    ),
-];
+    ];
+
+    final circulos = _pontos.map((ponto) {
+      final cor = _corDoNivel(ponto.nivel);
+      return CircleMarker(
+        point: ponto.posicao,
+        radius: 220,
+        useRadiusInMeter: true,
+        color: cor.withValues(alpha: 0.16),
+        borderColor: cor.withValues(alpha: 0.6),
+        borderStrokeWidth: 1.5,
+      );
+    }).toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -240,6 +507,7 @@ final List<Marker> marcadores = [
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.floodalert.mobile',
               ),
+              CircleLayer(circles: circulos),
               MarkerLayer(markers: marcadores),
               const RichAttributionWidget(
                 attributions: [

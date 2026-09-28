@@ -142,9 +142,18 @@ def listar_alertas(
     nivel: Optional[models.NivelRisco] = None,
     db: Session = Depends(get_db),
 ):
-    """O parâmetro ?nivel=baixo|moderado|alto espelha os chips de filtro
+    """Lista os alertas das últimas 24h — o mesmo prazo dos pinos de
+    reporte no mapa, então os dois somem praticamente juntos (o alerta
+    gerado por um reporte nasce no mesmo instante que ele).
+
+    O parâmetro ?nivel=baixo|moderado|alto espelha os chips de filtro
     da AlertsScreen no Flutter."""
-    query = db.query(models.Alerta).order_by(models.Alerta.criado_em.desc())
+    limite = datetime.utcnow() - timedelta(hours=24)
+    query = (
+        db.query(models.Alerta)
+        .filter(models.Alerta.criado_em >= limite)
+        .order_by(models.Alerta.criado_em.desc())
+    )
     if nivel:
         query = query.filter(models.Alerta.nivel == nivel)
     return query.all()
